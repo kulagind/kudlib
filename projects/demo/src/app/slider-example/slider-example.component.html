@@ -1,0 +1,73 @@
+<h2>1) Slider component</h2>
+
+<div class="container">
+    <div class="container__config">
+        <h3>Config:</h3>
+
+        <label for="isCycling">
+            <input type="checkbox" [(ngModel)]="isCycling" (change)="changeConfig()" id="isCycling">
+            Cycle on repeat            
+        </label>
+
+        <label for="isPauseByHover">
+            <input type="checkbox" [(ngModel)]="isPauseByHover" (change)="changeConfig()" id="isPauseByHover">
+            Stop cycle on hover
+        </label>
+
+        <label for="isDefaultButtons">
+            <input type="checkbox" [(ngModel)]="isDefaultButtons" (change)="changeConfig()" id="isDefaultButtons">
+            Show default buttons
+        </label>       
+
+        <label for="isSinglyCycle">
+            <input type="checkbox" [(ngModel)]="isSinglyCycle" (change)="changeConfig()" id="isSinglyCycle">
+            Turn one item by one (else by pages)
+        </label>
+        
+        <div>
+            <div>Cycling interval (milliseconds)</div>
+            <input type="number" [(ngModel)]="interval" (change)="changeConfig()">
+        </div>
+        
+        <div>
+            <div>Items on display (quantity)</div>
+            <input type="number" [(ngModel)]="itemsOnDisplayQuantity" (change)="changeConfig()">
+        </div>
+
+        <div>
+            <div>Cycle direction</div>
+            <label for="left">
+                Left
+                <input type="radio" name="direction" id="left" value="left" (change)="changeConfig('left')">
+            </label>
+            <label for="right">
+                Right
+                <input type="radio" name="direction" id="right" value="right" (change)="changeConfig('right')">
+            </label>
+        </div>
+    </div>
+
+    <div class="container__slider slider">
+        <kudlib-slider 
+            [items]="items"
+            [turnEmitter]="turnEmitter"
+            [config]="config"
+            (onCurrentPageChange)="changeCurrentPage($event)"
+            (onPagesQuantityChange)="changePagesCount($event)">
+            <ng-template let-item="$implicit">
+                <div class="slider__item" [ngStyle]="{'background-color': item.color}">
+                    <div class="slider__name">{{ item.name }}</div>
+                    <div class="slider__id">{{ item.id }}</div>
+                </div>
+            </ng-template>
+        </kudlib-slider>
+    </div>
+
+    <div class="container__custom-elements">
+        <button (click)="do('left')">CUSTOM LEFT BUTTOM</button>
+        <div>{{ currentPage }} / {{ pagesCount }}</div>
+        <button (click)="do('right')">CUSTOM RIGHT BUTTOM</button>
+    </div>
+</div>
+
+

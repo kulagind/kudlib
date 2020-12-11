@@ -1,3 +1,5 @@
+import { from, fromEvent, ReplaySubject } from 'rxjs';
+import { debounceTime, takeUntil } from 'rxjs/operators';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
@@ -8,79 +10,46 @@ import {
   EventEmitter,
   Input,
   NgZone,
-  OnChanges,
+  OnDestroy,
   OnInit,
   Output,
   QueryList,
-  SimpleChanges,
   TemplateRef,
   ViewChild,
   ViewChildren
 } from '@angular/core';
-
-enum Direction {
-  left = 'left',
-  right = 'right'
-}
-
-interface IPartialSliderConfig {
-  isCycling?: boolean, // is auto-turning
-  direction?: Direction, // turning direction
-  interval?: number, // milliseconds between turning
-  isPauseByHover?: boolean, // stop turning on hover
-  isDefaultButtons?: boolean, // show default buttons
-  isSinglyCycle?: boolean // turn one item by one ("false" means to turn a whole page)
-  itemsOnDisplayQuantity?: number // number of items on display
-}
-
-interface ISliderConfig {
-  isCycling: boolean,
-  direction: Direction,
-  interval: number,
-  isPauseByHover: boolean,
-  isDefaultButtons: boolean,
-  isSinglyCycle: boolean,
-  itemsOnDisplayQuantity: number
-}
-
-interface ISliderItem {
-  item: any;
-  position: number;
-  transform: number;
-}
-
-const DEFAULT_CONFIG: ISliderConfig = {
-  isCycling: true,
-  direction: Direction.right,
-  interval: 5000,
-  isPauseByHover: true,
-  isDefaultButtons: true,
-  isSinglyCycle: true,
-  itemsOnDisplayQuantity: 2
-}
+import { 
+  IPartialSliderConfig, 
+  ISliderItem, 
+  SliderDirection, 
+  SliderService 
+} from './slider.service';
 
 @Component({
   selector: 'kudlib-slider',
   templateUrl: './slider.component.html',
   styleUrls: ['./slider.component.css'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [SliderService]
 })
-export class SliderComponent implements OnInit, OnChanges, AfterViewInit {
+export class SliderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @ContentChild(TemplateRef) templateRef: TemplateRef<any>;
 
   @Input() items: any[];
   @Input() set config(value: IPartialSliderConfig) {
-    this._config = {...DEFAULT_CONFIG, ...value};
+    this.sliderService.setConfig(value);
   };
-
-  @Input() turnEmitter: EventEmitter<Direction>;
+  @Input() turnEmitter: EventEmitter<SliderDirection>;
   
   @Output() onPagesQuantityChange = new EventEmitter<number>();
   @Output() onCurrentPageChange = new EventEmitter<number>();
 
   @ViewChild('sliderWrapper') sliderWrapper: ElementRef;
   @ViewChildren('sliderItems') sliderItems: QueryList<ElementRef>;
+
+  private refresh$ = new ReplaySubject<void>(1);
+  private onDestroy$ = new ReplaySubject<void>(1);
 
   private sliderWrapperWidth: number;
   sliderItemWidth: number;
@@ -91,74 +60,122 @@ export class SliderComponent implements OnInit, OnChanges, AfterViewInit {
   private pagesQuantity: number;
 
   private transform: number = 0;
-  private interval: any = 0;
+  private intervalRef: any = 0;
 
-  _config: ISliderConfig;
+  _isCycling: boolean;
+  _direction: SliderDirection;
+  _interval: number;
+  _isPauseByHover: boolean;
+  _isDefaultButtons: boolean;
+  _isSinglyCycle: boolean;
+  _itemsOnDisplayQuantity: number;
+
   private _items: ISliderItem[] = [];
   pages: ISliderItem[] = [];
 
   constructor(
     private ngZone: NgZone,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private sliderService: SliderService
   ) { }
 
-  ngOnChanges(changes: SimpleChanges): void {
-    this._items = this.items;
+  ngOnDestroy(): void {
+    this.onDestroy$.next();
   }
 
   ngOnInit(): void {
-    this.setPages();
+    this.init();
     this.handleCustomTurning();
+
+    this.refresh$.pipe(
+      debounceTime(100)
+    ).subscribe(() => {
+      this.clearPosition();
+      this.setWrapperWidth();
+      this.setItemWidth(); 
+      this.setPages(); 
+      this.setItems();     
+      this.cycle(this._direction);      
+
+      this.cdr.detectChanges();
+    });
+
+    fromEvent(window, 'resize').pipe(
+      debounceTime(100),
+      takeUntil(this.onDestroy$)
+    ).subscribe(() => {
+      this.setWrapperWidth();
+      this.setItemWidth();
+    });    
   }
 
   ngAfterViewInit(): void {
     this.setWrapperWidth();
-    this.setItemWidth();
-    this.setItems();
-    this.cycle(this._config.direction);
+  }
+
+  private clearPosition(): void {
+    this.transform = 0;
+    this.currentPage = 0;
+    this.firstItemPosition = 0;
+    this.clearTransform();
+  }
+
+  private init(): void {
+    this.sliderService.getOptionsMap().forEach((value$, key) => {
+      value$.pipe(
+        takeUntil(this.onDestroy$)
+      ).subscribe(value => {
+        this[`_${key}`] = value;
+        this.refresh$.next();
+      });
+    });
   }
 
   private setPages(): void {
-    this.pagesQuantity = this._config.isSinglyCycle
+    this.pagesQuantity = this._isSinglyCycle
       ? this.items.length
-      : Math.ceil(this.items.length / this._config.itemsOnDisplayQuantity);
+      : Math.ceil(this.items.length / this._itemsOnDisplayQuantity);
 
     this.pages = [];
     for (let i=0; i < this.pagesQuantity; i++) {
       this.pages.push({
         item: this.items.slice(
-          (i * this._config.itemsOnDisplayQuantity), 
-          ((this.items.length - (i * this._config.itemsOnDisplayQuantity)) >= this._config.itemsOnDisplayQuantity)
-            ? (this._config.itemsOnDisplayQuantity + (i * this._config.itemsOnDisplayQuantity))
-            : ((this.items.length - (i * this._config.itemsOnDisplayQuantity)) + (i * this._config.itemsOnDisplayQuantity))
+          (i * this._itemsOnDisplayQuantity), 
+          ((this.items.length - (i * this._itemsOnDisplayQuantity)) >= this._itemsOnDisplayQuantity)
+            ? (this._itemsOnDisplayQuantity + (i * this._itemsOnDisplayQuantity))
+            : ((this.items.length - (i * this._itemsOnDisplayQuantity)) + (i * this._itemsOnDisplayQuantity))
         ),
         position: i,
-        transform: 0
+        transform: 0,
       })
     }
+
     this.onPagesQuantityChange.emit(this.pagesQuantity);
+    this.onCurrentPageChange.emit(this.currentPage);
   }
 
   private setWrapperWidth(): void {
-    this.sliderWrapperWidth = this.sliderWrapper.nativeElement.clientWidth;
+    if (this.sliderWrapper?.nativeElement) {
+      this.sliderWrapperWidth = this.sliderWrapper.nativeElement.clientWidth;
+      this.cdr.detectChanges();
+    }
   }
 
   private setItemWidth(): void {
-    if (this._config.isSinglyCycle) {
-      this.sliderItemWidth = this.sliderWrapperWidth / this._config.itemsOnDisplayQuantity;
+    if (this._isSinglyCycle) {
+      this.sliderItemWidth = this.sliderWrapperWidth / this._itemsOnDisplayQuantity;
     } else {
       this.sliderItemWidth = this.sliderWrapperWidth;
-      this.itemInGroupWidth = this.sliderWrapperWidth / this._config.itemsOnDisplayQuantity;
+      this.itemInGroupWidth = this.sliderWrapperWidth / this._itemsOnDisplayQuantity;
     }
-    
     this.cdr.detectChanges();
   }
 
   private setItems(): void {
-    const sliderItems = this._config.isSinglyCycle
+    const sliderItems = this._isSinglyCycle
       ? this.items
       : this.pages;
-    
+      
     this._items = sliderItems.map((item: any, index: number) => {
       return {
         item: this.sliderItems.toArray()[index],
@@ -168,56 +185,71 @@ export class SliderComponent implements OnInit, OnChanges, AfterViewInit {
     });
   }
 
-  cycle(direction: Direction): void {
-    if (!this._config.isCycling || !this.isPossibleToCycle()) {
+  cycle(direction: SliderDirection): void {
+    if (this.intervalRef) {
+      clearInterval(this.intervalRef);
+    }
+    if (!this._isCycling || !this.isPossibleToCycle()) {
       return;
     }
-    this.ngZone.runOutsideAngular(() => {
-      this.interval = setInterval((): void => {
+    this.ngZone.runOutsideAngular(() => {      
+      this.intervalRef = setInterval((): void => {    
         this.transformItem(direction);
-      }, this._config.interval);
+      }, this._interval);
     });
   }
 
   isPossibleToCycle(): boolean {
-    return this._items.length > this._config.itemsOnDisplayQuantity;
+    return this.items.length > this._itemsOnDisplayQuantity;
   }
 
-  private transformItem(direction: Direction): void {
+  private clearTransform(): void {
+    if (this.sliderWrapper?.nativeElement) {
+      this.sliderWrapper.nativeElement.style.transform = 'translateX(' + this.transform + '%)';
+      this._items.forEach(item => {
+        item.item.nativeElement.style.transform = 'translateX(' + this.transform + '%)';
+      });
+    }
+  }
+
+  private transformItem(direction: SliderDirection): void {
     let nextItem: number;
-    if (direction === Direction.right) {
+    let pageNumber;
+    
+    if (direction === SliderDirection.right) {
       this.firstItemPosition++;
 
-      const pageNumber = ++this.currentPage % this.pagesQuantity;
-      this.setCurrentPage(pageNumber);
-
+      pageNumber = ++this.currentPage % this.pagesQuantity;
+      
       if ((this.firstItemPosition + this.sliderWrapperWidth / this.sliderItemWidth - 1) > this.position.getMax()) {
         nextItem = this.position.getItemMin();
         this._items[nextItem].position = this.position.getMax() + 1;
-        this._items[nextItem].transform += this._items.length * 100;
-        this._items[nextItem].item.nativeElement.style.transform = 'translateX(' + this._items[nextItem].transform + '%)';
+        this._items[nextItem].transform += this._items.length * 100;        
+        this.sliderItems.toArray()[nextItem].nativeElement.style.transform = 'translateX(' + this._items[nextItem].transform + '%)';
       }
+      console.log(this._items);
+      
       this.transform -= this.step;
     } else {
       this.firstItemPosition--;
 
-      const pageNumber = (this.pagesQuantity + --this.currentPage) % this.pagesQuantity;
-      this.setCurrentPage(pageNumber);
+      pageNumber = (this.pagesQuantity + --this.currentPage) % this.pagesQuantity;
 
       if (this.firstItemPosition < this.position.getMin()) {
         nextItem = this.position.getItemMax();
         this._items[nextItem].position = this.position.getMin() - 1;
         this._items[nextItem].transform -= this._items.length * 100;
-        this._items[nextItem].item.nativeElement.style.transform = 'translateX(' + this._items[nextItem].transform + '%)';
+        this.sliderItems.toArray()[nextItem].nativeElement.style.transform = 'translateX(' + this._items[nextItem].transform + '%)';
       }
       this.transform += this.step;
     }
     this.sliderWrapper.nativeElement.style.transform = 'translateX(' + this.transform + '%)';
+    this.setCurrentPage(pageNumber);
   }
 
   private setCurrentPage(pageNumber: number): void {
     this.currentPage = pageNumber;
-    this.onCurrentPageChange.emit(pageNumber);
+    this.onCurrentPageChange.emit(this.currentPage);
   }
 
   private get step(): number {
@@ -242,32 +274,33 @@ export class SliderComponent implements OnInit, OnChanges, AfterViewInit {
             indexItem = index;
           }
         });
+        
         return indexItem;
       },
       getMin: (): number => {
         return this._items[this.position.getItemMin()].position;
       },
-      getMax: (): number => {
+      getMax: (): number => {        
         return this._items[this.position.getItemMax()].position;
       }
     }
   }
 
-  turn(direction: Direction): void {
+  turn(direction: SliderDirection): void {
     this.transformItem(direction);
-    clearInterval(this.interval);
-    this.cycle(this._config.direction);
+    clearInterval(this.intervalRef);
+    this.cycle(this._direction);
   }
 
   clearInterval(): void {
-    if (this._config.isPauseByHover) {
-      clearInterval(this.interval);
+    if (this._isPauseByHover) {
+      clearInterval(this.intervalRef);
     }
   }
 
   private handleCustomTurning() {
     if (this.turnEmitter) {
-      this.turnEmitter.subscribe((direction: Direction) => {
+      this.turnEmitter.subscribe((direction: SliderDirection) => {
         this.turn(direction);
       });
     }

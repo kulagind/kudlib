@@ -1,14 +1,9 @@
-<div #mainElement class="lib_slider" (mouseover)="clearInterval()" (mouseleave)="cycle(_config.direction)">
+<div #mainElement class="lib_slider" (mouseover)="clearInterval()" (mouseleave)="cycle(_direction)">
   <div #sliderWrapper class="lib_slider__wrapper" [ngStyle]="{'justify-content': isPossibleToCycle() || 'center'}">
-    <ng-container *ngIf="_config.isSinglyCycle; else byPage">
+    <ng-container *ngIf="_isSinglyCycle; else byPage">
       <div #sliderItems [ngStyle]="{'flex-basis': sliderItemWidth + 'px'}" class="lib_slider__item" *ngFor="let item of items">
         <ng-template *ngTemplateOutlet="templateRef; context: {$implicit: item}"></ng-template>
       </div>
-      <ng-container *ngIf="isPossibleToCycle()">
-        <div class="lib_slider__item" [ngStyle]="{'flex-basis': sliderItemWidth + 'px'}" *ngFor="let item of items">
-          <ng-template *ngTemplateOutlet="templateRef; context: {$implicit: item}"></ng-template>
-        </div>
-      </ng-container>
     </ng-container>
 
     <ng-template #byPage>
@@ -20,8 +15,8 @@
     </ng-template>
   </div>
 
-  <div *ngIf="_config.isDefaultButtons && isPossibleToCycle()">
-    <a (click)="turn('left')" class="lib_slider__control lib_slider__control_left" href="#" role="button"></a>
-    <a (click)="turn('right')" class="lib_slider__control lib_slider__control_right lib_slider__control_show" href="#" role="button"></a>
+  <div *ngIf="_isDefaultButtons && isPossibleToCycle()">
+    <a (click)="turn('left')" class="lib_slider__control lib_slider__control_left" role="button"></a>
+    <a (click)="turn('right')" class="lib_slider__control lib_slider__control_right lib_slider__control_show" role="button"></a>
   </div>
 </div>
