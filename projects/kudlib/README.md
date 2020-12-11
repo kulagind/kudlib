@@ -1,24 +1,21 @@
 # Kudlib
 
-This library was generated with [Angular CLI](https://github.com/angular/angular-cli) version 10.1.6.
+This is a library with angular components/directives.
 
-## Code scaffolding
+Now here is:
+1) slider component;
 
-Run `ng generate component component-name --project kudlib` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module --project kudlib`.
-> Note: Don't forget to add `--project kudlib` or else it will be added to the default project in your `angular.json` file. 
+## Using
 
-## Build
+1) You can install this by:
+> npm install kudlib
 
-Run `ng build kudlib` to build the project. The build artifacts will be stored in the `dist/` directory.
+2) Next you have to add import in your angular module:
+> `import { KudlibModule } from 'kudlib';`
 
-## Publishing
+3) After that you can use component (don't forget to read up about input arguments by a link below):
+> `<kudlib-slider></kudlib-slider>`
 
-After building your library with `ng build kudlib`, go to the dist folder `cd dist/kudlib` and run `npm publish`.
+## See more
 
-## Running unit tests
-
-Run `ng test kudlib` to execute the unit tests via [Karma](https://karma-runner.github.io).
-
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).
+You can find more (including demo) on [kudlib](https://github.com/kulagind/kudlib)

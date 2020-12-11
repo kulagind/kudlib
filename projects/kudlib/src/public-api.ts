@@ -3,3 +3,4 @@
  */
 
 export * from './lib/kudlib.module';
+export * from './lib/slider/slider.component';
