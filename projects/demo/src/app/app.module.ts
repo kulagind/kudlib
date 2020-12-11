@@ -4,7 +4,7 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { SliderExampleComponent } from './slider-example/slider-example.component';
 import { FormsModule } from '@angular/forms';
-import { KudlibModule } from 'projects/kudlib/src/public-api';
+import { KudlibModule } from 'kudlib';
 
 @NgModule({
   declarations: [
