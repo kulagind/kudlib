@@ -226,9 +226,7 @@ export class SliderComponent implements OnInit, AfterViewInit, OnDestroy {
         this._items[nextItem].position = this.position.getMax() + 1;
         this._items[nextItem].transform += this._items.length * 100;        
         this.sliderItems.toArray()[nextItem].nativeElement.style.transform = 'translateX(' + this._items[nextItem].transform + '%)';
-      }
-      console.log(this._items);
-      
+      }      
       this.transform -= this.step;
     } else {
       this.firstItemPosition--;
