@@ -1,9 +1,10 @@
 {
   "name": "kudlib-example",
+  "homepage": "https://kulagind.github.io/kudlib/",
   "version": "0.0.2",
   "scripts": {
     "start": "ng serve",
-    "build": "ng build"
+    "build": "ng build --prod"
   },
   "private": true,
   "dependencies": {
