@@ -26,13 +26,13 @@ Now here is:
 
 > items: Array<any>; // subjects of slider<br />
 > config: {<br />
->   isCycling: boolean; // is auto-turning (by default true)<br />
->   isPauseByHover: boolean; // turning direction (by default true)<br />
->   isDefaultButtons: boolean; // milliseconds between turning (by default true)<br />
->   isSinglyCycle: boolean; // stop turning on hover (by default true)<br />
->   interval: number; // show default buttons (by default 1000)<br />
->   itemsOnDisplayQuantity: number; // turn one item by one ("false" means to turn a whole page) (by default 3)<br />
->   direction: 'right' | 'left'; // number of items on display (by default 'right')<br />
+> &nbsp;  isCycling: boolean; // is auto-turning (by default true)<br />
+> &nbsp;  isPauseByHover: boolean; // turning direction (by default true)<br />
+> &nbsp;  isDefaultButtons: boolean; // milliseconds between turning (by default true)<br />
+> &nbsp;  isSinglyCycle: boolean; // stop turning on hover (by default true)<br />
+> &nbsp;  interval: number; // show default buttons (by default 1000)<br />
+> &nbsp;  itemsOnDisplayQuantity: number; // turn one item by one ("false" means to turn a whole page) (by default 3)<br />
+> &nbsp;  direction: 'right' | 'left'; // number of items on display (by default 'right')<br />
 > };<br />
 > turnEmitter: EventEmitter<'left' | 'right'>; // its to use your own buttons instead of default. You need emit a direction (left' | 'right') to turn slider.
 
@@ -46,15 +46,15 @@ Now here is:
 You have to pass ng-template (with let-item="$implicit" to use item's property in a template) into kudlib-slider component and define.
 
 > `<kudlib-slider `<br />
->   `[items]="items"`<br />
->   `[turnEmitter]="turnEmitter"`<br />
->   `[config]="config"`<br />
->   `(onCurrentPageChange)="changeCurrentPage($event)"`<br />
->   `(onPagesQuantityChange)="changePagesCount($event)">`<br />
->   `<ng-template let-item="$implicit">`<br />
->       `<div class="slider__item" [ngStyle]="{'background-color': item.color}">`<br />
->           `<div class="slider__name">{{ item.name }}</div>`<br />
->           `<div class="slider__id">{{ item.id }}</div>`<br />
->       `</div>`<br />
->   `</ng-template>`<br />
+> &nbsp;  `[items]="items"`<br />
+> &nbsp;  `[turnEmitter]="turnEmitter"`<br />
+> &nbsp;  `[config]="config"`<br />
+> &nbsp;  `(onCurrentPageChange)="changeCurrentPage($event)"`<br />
+> &nbsp;  `(onPagesQuantityChange)="changePagesCount($event)">`<br />
+> &nbsp;  `<ng-template let-item="$implicit">`<br />
+> &nbsp;&nbsp;      `<div class="slider__item" [ngStyle]="{'background-color': item.color}">`<br />
+> &nbsp;&nbsp;&nbsp;          `<div class="slider__name">{{ item.name }}</div>`<br />
+> &nbsp;&nbsp;&nbsp;          `<div class="slider__id">{{ item.id }}</div>`<br />
+> &nbsp;&nbsp;      `</div>`<br />
+> &nbsp;  `</ng-template>`<br />
 > `</kudlib-slider>`
