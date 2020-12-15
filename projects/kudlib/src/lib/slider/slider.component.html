@@ -1,13 +1,13 @@
 <div #mainElement class="lib_slider" (mouseover)="clearInterval()" (mouseleave)="cycle(_direction)">
   <div #sliderWrapper class="lib_slider__wrapper" [ngStyle]="{'justify-content': isPossibleToCycle() || 'center'}">
     <ng-container *ngIf="_isSinglyCycle; else byPage">
-      <div #sliderItems [ngStyle]="{'flex-basis': sliderItemWidth + 'px'}" class="lib_slider__item" *ngFor="let item of items">
+      <div #sliderItems [ngStyle]="{'flex-basis': sliderItemWidth + 'px'}" class="lib_slider__item" *ngFor="let item of inputItems">
         <ng-template *ngTemplateOutlet="templateRef; context: {$implicit: item}"></ng-template>
       </div>
     </ng-container>
 
     <ng-template #byPage>
-      <div #sliderItems class="lib_slider__page lib_page" *ngFor="let page of pages">
+      <div #sliderItems class="lib_slider__page lib_page" *ngFor="let page of pagesWithPositions">
         <div *ngFor="let item of page.item" class="lib_page__item" [ngStyle]="{'flex-basis': itemInGroupWidth + 'px'}">
           <ng-template *ngTemplateOutlet="templateRef; context: {$implicit: item}"></ng-template>
         </div>

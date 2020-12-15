@@ -29,12 +29,12 @@ interface ISliderConfig {
 const DEFAULT_CONFIG: ISliderConfig = {
     isCycling: true,
     direction: SliderDirection.right,
-    interval: 1000,
+    interval: 5000,
     isPauseByHover: true,
     isDefaultButtons: true,
     isSinglyCycle: true,
     itemsOnDisplayQuantity: 3
-  }
+}
   
 export interface ISliderItem {
     item: any;

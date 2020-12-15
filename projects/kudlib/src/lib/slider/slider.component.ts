@@ -1,4 +1,4 @@
-import { from, fromEvent, ReplaySubject } from 'rxjs';
+import { fromEvent, ReplaySubject } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
 import {
   AfterViewInit,
@@ -36,7 +36,9 @@ export class SliderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @ContentChild(TemplateRef) templateRef: TemplateRef<any>;
 
-  @Input() items: any[];
+  @Input() set items(value: any[]) {
+    this.sliderService.setItems(value);
+  };
   @Input() set config(value: IPartialSliderConfig) {
     this.sliderService.setConfig(value);
   };
@@ -70,8 +72,9 @@ export class SliderComponent implements OnInit, AfterViewInit, OnDestroy {
   _isSinglyCycle: boolean;
   _itemsOnDisplayQuantity: number;
 
-  private _items: ISliderItem[] = [];
-  pages: ISliderItem[] = [];
+  inputItems: any[] = [];
+  private itemsWithPositions: ISliderItem[] = [];
+  pagesWithPositions: ISliderItem[] = [];
 
   constructor(
     private ngZone: NgZone,
@@ -129,21 +132,28 @@ export class SliderComponent implements OnInit, AfterViewInit, OnDestroy {
         this.refresh$.next();
       });
     });
+
+    this.sliderService.items$.pipe(
+      takeUntil(this.onDestroy$)
+    ).subscribe(value => {
+      this.inputItems = value;
+      this.refresh$.next();
+    });
   }
 
   private setPages(): void {
     this.pagesQuantity = this._isSinglyCycle
-      ? this.items.length
-      : Math.ceil(this.items.length / this._itemsOnDisplayQuantity);
+      ? this.inputItems.length
+      : Math.ceil(this.inputItems.length / this._itemsOnDisplayQuantity);
 
-    this.pages = [];
+    this.pagesWithPositions = [];
     for (let i=0; i < this.pagesQuantity; i++) {
-      this.pages.push({
-        item: this.items.slice(
+      this.pagesWithPositions.push({
+        item: this.inputItems.slice(
           (i * this._itemsOnDisplayQuantity), 
-          ((this.items.length - (i * this._itemsOnDisplayQuantity)) >= this._itemsOnDisplayQuantity)
+          ((this.inputItems.length - (i * this._itemsOnDisplayQuantity)) >= this._itemsOnDisplayQuantity)
             ? (this._itemsOnDisplayQuantity + (i * this._itemsOnDisplayQuantity))
-            : ((this.items.length - (i * this._itemsOnDisplayQuantity)) + (i * this._itemsOnDisplayQuantity))
+            : ((this.inputItems.length - (i * this._itemsOnDisplayQuantity)) + (i * this._itemsOnDisplayQuantity))
         ),
         position: i,
         transform: 0,
@@ -173,10 +183,10 @@ export class SliderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private setItems(): void {
     const sliderItems = this._isSinglyCycle
-      ? this.items
-      : this.pages;
+      ? this.inputItems
+      : this.pagesWithPositions;
       
-    this._items = sliderItems.map((item: any, index: number) => {
+    this.itemsWithPositions = sliderItems.map((item: any, index: number) => {
       return {
         item: this.sliderItems.toArray()[index],
         transform: 0,
@@ -200,13 +210,13 @@ export class SliderComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   isPossibleToCycle(): boolean {
-    return this.items.length > this._itemsOnDisplayQuantity;
+    return this.inputItems.length > this._itemsOnDisplayQuantity;
   }
 
   private clearTransform(): void {
     if (this.sliderWrapper?.nativeElement) {
       this.sliderWrapper.nativeElement.style.transform = 'translateX(' + this.transform + '%)';
-      this._items.forEach(item => {
+      this.itemsWithPositions.forEach(item => {
         item.item.nativeElement.style.transform = 'translateX(' + this.transform + '%)';
       });
     }
@@ -223,9 +233,9 @@ export class SliderComponent implements OnInit, AfterViewInit, OnDestroy {
       
       if ((this.firstItemPosition + this.sliderWrapperWidth / this.sliderItemWidth - 1) > this.position.getMax()) {
         nextItem = this.position.getItemMin();
-        this._items[nextItem].position = this.position.getMax() + 1;
-        this._items[nextItem].transform += this._items.length * 100;        
-        this.sliderItems.toArray()[nextItem].nativeElement.style.transform = 'translateX(' + this._items[nextItem].transform + '%)';
+        this.itemsWithPositions[nextItem].position = this.position.getMax() + 1;
+        this.itemsWithPositions[nextItem].transform += this.itemsWithPositions.length * 100;        
+        this.sliderItems.toArray()[nextItem].nativeElement.style.transform = 'translateX(' + this.itemsWithPositions[nextItem].transform + '%)';
       }      
       this.transform -= this.step;
     } else {
@@ -235,9 +245,9 @@ export class SliderComponent implements OnInit, AfterViewInit, OnDestroy {
 
       if (this.firstItemPosition < this.position.getMin()) {
         nextItem = this.position.getItemMax();
-        this._items[nextItem].position = this.position.getMin() - 1;
-        this._items[nextItem].transform -= this._items.length * 100;
-        this.sliderItems.toArray()[nextItem].nativeElement.style.transform = 'translateX(' + this._items[nextItem].transform + '%)';
+        this.itemsWithPositions[nextItem].position = this.position.getMin() - 1;
+        this.itemsWithPositions[nextItem].transform -= this.itemsWithPositions.length * 100;
+        this.sliderItems.toArray()[nextItem].nativeElement.style.transform = 'translateX(' + this.itemsWithPositions[nextItem].transform + '%)';
       }
       this.transform += this.step;
     }
@@ -258,8 +268,8 @@ export class SliderComponent implements OnInit, AfterViewInit, OnDestroy {
     return {
       getItemMin: (): number => {
         let indexItem = 0;
-        this._items.forEach((item, index) => {
-          if (item.position < this._items[indexItem].position) {
+        this.itemsWithPositions.forEach((item, index) => {
+          if (item.position < this.itemsWithPositions[indexItem].position) {
             indexItem = index;
           }
         });
@@ -267,8 +277,8 @@ export class SliderComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       getItemMax: (): number => {
         let indexItem = 0;
-        this._items.forEach((item, index) => {
-          if (item.position > this._items[indexItem].position) {
+        this.itemsWithPositions.forEach((item, index) => {
+          if (item.position > this.itemsWithPositions[indexItem].position) {
             indexItem = index;
           }
         });
@@ -276,10 +286,10 @@ export class SliderComponent implements OnInit, AfterViewInit, OnDestroy {
         return indexItem;
       },
       getMin: (): number => {
-        return this._items[this.position.getItemMin()].position;
+        return this.itemsWithPositions[this.position.getItemMin()].position;
       },
       getMax: (): number => {        
-        return this._items[this.position.getItemMax()].position;
+        return this.itemsWithPositions[this.position.getItemMax()].position;
       }
     }
   }

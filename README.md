@@ -28,9 +28,9 @@ Now here is:
 > `config: {`<br />
 > &nbsp;&nbsp;  `isCycling: boolean;` // is auto-turning (by default true)<br />
 > &nbsp;&nbsp;  `isPauseByHover: boolean;` // turning direction (by default true)<br />
-> &nbsp;&nbsp;  `isDefaultButtons: boolean;` // milliseconds between turning (by default true)<br />
+> &nbsp;&nbsp;  `isDefaultButtons: boolean;` // show default buttons (by default true)<br />
 > &nbsp;&nbsp;  `isSinglyCycle: boolean;` // stop turning on hover (by default true)<br />
-> &nbsp;&nbsp;  `interval: number;` // show default buttons (by default 1000)<br />
+> &nbsp;&nbsp;  `interval: number;` // milliseconds between turning (by default 5000)<br />
 > &nbsp;&nbsp;  `itemsOnDisplayQuantity: number;` // turn one item by one ("false" means to turn a whole page) (by default 3)<br />
 > &nbsp;&nbsp;  `direction: 'right' | 'left';` // number of items on display (by default 'right')<br />
 > `};`<br />

@@ -50,6 +50,8 @@ export class SliderExampleComponent implements OnInit {
   itemsOnDisplayQuantity: number = 3;
   direction: 'right' | 'left' = 'right';
 
+  private initItemIndex: 5 = 5;
+
   constructor(
     private cdr: ChangeDetectorRef
   ) {}
@@ -87,5 +89,15 @@ export class SliderExampleComponent implements OnInit {
       itemsOnDisplayQuantity: this.itemsOnDisplayQuantity,
       direction: this.direction,
     };
+  }
+
+  addItem(): void {
+    const randomColor = `#${Math.floor(Math.random()*16777215).toString(16)}`;
+    const newItem = {
+      name: randomColor,
+      id: this.initItemIndex++,
+      color: randomColor
+    };
+    this.items = [...this.items, newItem];
   }
 }
